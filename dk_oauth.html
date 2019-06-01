@@ -1,0 +1,64 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title></title>
+
+  <meta name="theme-color" content="#fafafa">
+  <script type="text/javascript">
+  /**
+   * Get the URL parameters
+   * source: https://css-tricks.com/snippets/javascript/get-url-variables/
+   * @param  {String} url The URL
+   * @return {Object}     The URL parameters
+   */
+  var getParams = function (url) {
+    var params = {};
+    var parser = document.createElement('a');
+    parser.href = url;
+    var query = parser.search.substring(1);
+    var vars = query.split('&');
+    for (var i = 0; i < vars.length; i++) {
+      var pair = vars[i].split('=');
+      params[pair[0]] = decodeURIComponent(pair[1]);
+    }
+    return params;
+  };
+
+  var save_client_id = function() {
+    localStorage.client_id = document.getElementById("client_id").value;
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+      params = getParams(window.location.href);
+      if(params["error"]) {
+        document.getElementById("message").innerHTML = "Error: " + params["error"];  
+      } else if(params["code"]) {
+        document.getElementById("message").innerHTML = "Code is: " + params["code"];
+      }
+      
+      if(localStorage.client_id != null) {
+        document.getElementById("client_id").value = localStorage.client_id;
+      }
+
+    });
+  </script>
+</head>
+
+<body>
+  <p>DKBC Test</p>
+  <h2 id="message"></h2>
+  <form action="https://sso.digikey.com/as/authorization.oauth2" method="get" onsubmit="return save_client_id()">
+    <fieldset>
+      <legend>client_id</legend>
+      <input type="text" id="client_id" name="client_id">
+      <input type="hidden" name="response_type" value="code">
+      <input type="hidden" name="redirect_uri" value="https://alvarop.com/dkbc/dk_oauth.html">
+      <button>Ok</button>
+    </fieldset>
+  </form>
+
+</body>
+
+</html>
