@@ -5,7 +5,7 @@ import time
 with open("config.yml", 'r') as ymlfile:
     cfg = yaml.safe_load(ymlfile)
 
-redirect_uri = "https://localhost"
+redirect_uri = "https://alvarop.com/dkbc/dk_oauth.html"
 
 # https://api-portal.digikey.com/app_overview
 url = "https://sso.digikey.com/as/authorization.oauth2?response_type=code&client_id={}&redirect_uri={}".format(cfg['client-id'], redirect_uri)
