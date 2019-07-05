@@ -1,5 +1,7 @@
+import argparse
 import re
 import time
+import os
 from dkbc import dk_process_barcode
 
 DEBUG = False
@@ -20,12 +22,13 @@ known_dis = {
 
 reduced_dis = ["P", "1P"]
 
+
 def decode_barcode(barcode):
     # Check for valid code first
     if not iso_iec_15434_start.match(barcode):
         raise ValueError("Invalid barcode!")
 
-    new_code = ['[)>\u001e06']
+    new_code = ["[)>\u001e06"]
     fields = {}
     sections = barcode.split("{GS}")
     for section in sections[1:]:
@@ -43,25 +46,48 @@ def decode_barcode(barcode):
         elif DEBUG:
             print("Invalid section", section)
 
-    reduced_barcode = '\u001d'.join(new_code)
+    reduced_barcode = "\u001d".join(new_code)
 
     return fields, reduced_barcode
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--outfile", help="CSV output file")
+args = parser.parse_args()
+
 
 barcode = input("Scan barcode:")
 
 fields, simple_code = decode_barcode(barcode)
 
-
+# TODO - use other digikey api when scanning non-dk barcodes
 barcode = barcode.replace("{RS}", "\u241e")
 barcode = barcode.replace("{GS}", "\u241d")
 barcode = barcode.replace("{EOT}", "\x04")
-
-# TODO - use other digikey api when scanning non-dk barcodes
-
 digikey_data = dk_process_barcode(barcode)
 
 if DEBUG:
     print(fields)
     print(digikey_data)
 
-print(','.join([fields['Supplier Part Number'], digikey_data['Description'], simple_code]))
+if args.outfile:
+    new_file = True
+
+    if os.path.isfile(args.outfile):
+        new_file = False
+
+    with open(args.outfile, "a") as outfile:
+        if new_file:
+            outfile.write("MPN,DESCRIPTION,BARCODE\n")
+        outfile.write(
+            ",".join(
+                [
+                    fields["Supplier Part Number"],
+                    digikey_data["Description"],
+                    simple_code,
+                ]
+            )
+            + "\n"
+        )
+
+print(fields["Supplier Part Number"] + " " + digikey_data["Description"])
