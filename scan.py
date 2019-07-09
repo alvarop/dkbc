@@ -4,7 +4,6 @@ import time
 import os
 from dkbc import dk_process_barcode
 
-DEBUG = False
 
 iso_iec_15434_start = re.compile("^>?\[\)>(\{RS\})?[>]?[0-9]{2}{GS}")
 # https://www.eurodatacouncil.org/images/documents/ANS_MH10.8.2%20_CM_20140512.pdf
@@ -21,6 +20,13 @@ known_dis = {
 }
 
 reduced_dis = ["P", "1P"]
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--outfile", help="CSV output file")
+parser.add_argument("--batch", action="store_true", help="Batch scan")
+parser.add_argument("--debug", action="store_true", help="Debug mode")
+args = parser.parse_args()
 
 
 def decode_barcode(barcode):
@@ -41,53 +47,61 @@ def decode_barcode(barcode):
 
             if di in known_dis:
                 fields[known_dis[di]] = value
-            elif DEBUG:
+            elif args.debug:
                 print("NEW DI!", di, value)
-        elif DEBUG:
+        elif args.debug:
             print("Invalid section", section)
 
-    reduced_barcode = "\u001d".join(new_code)
+    # Add GS delimiters and EOT at the end
+    reduced_barcode = "\u001d".join(new_code) + "\u0004"
 
     return fields, reduced_barcode
 
+scanning = True
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--outfile", help="CSV output file")
-args = parser.parse_args()
+while scanning:
+    barcode = input("Scan barcode:")
 
+    fields, simple_code = decode_barcode(barcode)
 
-barcode = input("Scan barcode:")
+    # TODO - use other digikey api when scanning non-dk barcodes
+    barcode = barcode.replace("{RS}", "\u241e")
+    barcode = barcode.replace("{GS}", "\u241d")
+    barcode = barcode.replace("{EOT}", "\x04")
+    digikey_data = dk_process_barcode(barcode)
 
-fields, simple_code = decode_barcode(barcode)
+    if args.debug:
+        print(fields)
+        print(digikey_data)
 
-# TODO - use other digikey api when scanning non-dk barcodes
-barcode = barcode.replace("{RS}", "\u241e")
-barcode = barcode.replace("{GS}", "\u241d")
-barcode = barcode.replace("{EOT}", "\x04")
-digikey_data = dk_process_barcode(barcode)
+    if args.outfile:
+        new_file = True
 
-if DEBUG:
-    print(fields)
-    print(digikey_data)
+        if os.path.isfile(args.outfile):
+            new_file = False
 
-if args.outfile:
-    new_file = True
-
-    if os.path.isfile(args.outfile):
-        new_file = False
-
-    with open(args.outfile, "a") as outfile:
-        if new_file:
-            outfile.write("MPN,DESCRIPTION,BARCODE\n")
-        outfile.write(
-            ",".join(
-                [
-                    fields["Supplier Part Number"],
-                    digikey_data["Description"],
-                    simple_code,
-                ]
+        with open(args.outfile, "a") as outfile:
+            if new_file:
+                outfile.write("MPN,DESCRIPTION,BARCODE\n")
+            outfile.write(
+                ",".join(
+                    [
+                        fields["Supplier Part Number"],
+                        digikey_data["Description"],
+                        simple_code,
+                    ]
+                )
+                + "\n"
             )
-            + "\n"
-        )
 
-print(fields["Supplier Part Number"] + " " + digikey_data["Description"])
+    if "Description" in digikey_data:
+        description = digikey_data["Description"]
+    else:
+        description = ""
+
+    print(fields["Supplier Part Number"] + " " + description)
+
+    if args.batch:
+        scanning = True
+    else:
+        scanning = False
