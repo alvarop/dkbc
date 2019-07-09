@@ -5,7 +5,7 @@ import requests
 import time
 
 
-def refresh_token():
+def refresh_token(cfg):
     # https://api-portal.digikey.com/app_overview
 
     post_request = {
@@ -41,14 +41,17 @@ def refresh_token():
     else:
         print("ERROR")
 
+    return cfg
+
 
 def dk_process_barcode(barcode):
+
     with open("config.yml", "r") as ymlfile:
         cfg = yaml.safe_load(ymlfile)
 
     if int(cfg["token-expiration"]) < time.time():
         print("Token has expired, refreshing")
-        refresh_token()
+        cfg = refresh_token(cfg)
 
     conn = http.client.HTTPSConnection("api.digikey.com")
 
@@ -72,4 +75,3 @@ def dk_process_barcode(barcode):
         print("Unauthorized! Need to refresh token.")
 
     return data
-
