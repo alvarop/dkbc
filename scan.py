@@ -57,9 +57,15 @@ def decode_barcode(barcode):
 
     return fields, reduced_barcode
 
+
 scanning = True
 
 while scanning:
+    if args.batch:
+        scanning = True
+    else:
+        scanning = False
+
     barcode = input("Scan barcode:")
 
     fields, simple_code = decode_barcode(barcode)
@@ -100,8 +106,3 @@ while scanning:
         description = ""
 
     print(fields["Supplier Part Number"] + " " + description)
-
-    if args.batch:
-        scanning = True
-    else:
-        scanning = False

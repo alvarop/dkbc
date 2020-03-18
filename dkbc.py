@@ -75,3 +75,41 @@ def dk_process_barcode(barcode):
         print("Unauthorized! Need to refresh token.")
 
     return data
+
+
+def dk_get_part_details(part_no):
+
+    with open("config.yml", "r") as ymlfile:
+        cfg = yaml.safe_load(ymlfile)
+
+    if int(cfg["token-expiration"]) < time.time():
+        print("Token has expired, refreshing")
+        cfg = refresh_token(cfg)
+
+    conn = http.client.HTTPSConnection("api.digikey.com")
+
+    # TODO - escape part_no quotes
+    payload = (
+        '{"Part": "'
+        + part_no
+        + '","IncludeAllAssociatedProducts": "false","IncludeAllForUseWithProducts": "false"}'
+    )
+
+    headers = {
+        "x-ibm-client-id": cfg["client-id"],
+        "authorization": cfg["access-token"],
+        "content-type": "application/json",
+        "accept": "application/json",
+    }
+
+    conn.request(
+        "POST", "/services/partsearch/v2/partdetails", payload.encode("utf-8"), headers
+    )
+
+    res = conn.getresponse()
+    data = json.loads(res.read())
+
+    if "httpMessage" in data and data["httpMessage"] == "Unauthorized":
+        print("Unauthorized! Need to refresh token.")
+
+    return data
