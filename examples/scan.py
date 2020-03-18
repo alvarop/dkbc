@@ -2,7 +2,7 @@ import argparse
 import re
 import time
 import os
-from dkbc import dk_process_barcode
+from dkbc.dkbc import dk_process_barcode
 
 
 iso_iec_15434_start = re.compile("^>?\[\)>(\{RS\})?[>]?[0-9]{2}{GS}")

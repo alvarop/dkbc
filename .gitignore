@@ -1,2 +1,5 @@
 *config.yml
 *.lock
+venv/
+*.egg-info
+__pycache__/

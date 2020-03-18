@@ -2,8 +2,8 @@ import argparse
 import re
 import time
 import os
-from dkbc import dk_get_part_details
-
+from dkbc.dkbc import dk_get_part_details
+from pprint import pprint
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--outfile", help="CSV output file")
@@ -25,20 +25,16 @@ while scanning:
     data = dk_get_part_details(part_no)
 
     if args.debug:
-        print(data)
+        pprint(data)
 
-    if data["HttpStatusCode"] == 404:
+    if "HttpStatusCode" in data and data["HttpStatusCode"] == 404:
         print(data["Message"])
         print(data["Details"])
         continue
 
     details = data["PartDetails"]
 
-    print(
-        details["ManufacturerPartNumber"]
-        + " "
-        + details["ProductDescription"]
-    )
+    print(details["ManufacturerPartNumber"] + " " + details["ProductDescription"])
 
     if args.outfile:
         new_code = [

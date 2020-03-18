@@ -7,11 +7,16 @@ These are just a few scripts I wrote to look up part information from Digi-key b
 * Register/login
 * Register application
 * Get client id and client secret
-* Setup python environment (using pipenv in this case) `pipenv install --three`
-* Run `pipenv run python post_code.py` and follow the instructions to get the authorization
+* Setup python environment (using virtualenv in this case) for examples
+```
+virtualenv venv
+source venv/bin/activate
+pip install -e .
+```
+* Run `python -m dkbc.post_code` and follow the instructions to get the authorization (you only have to do this once)
 
 ## Scanning barcodes
-* Run `pipenv run python scan.py`
+* Run `python examples/scan.py`
 
 ## Manually entering part numbers
-* Run `pipenv run python search.py`
+* Run `python examples/search.py`
