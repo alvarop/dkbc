@@ -3,7 +3,7 @@ import re
 import time
 import os
 import sys
-from dkbc.dkbc import dk_get_part_details
+from dkbc.dkbc import DKBC
 from pprint import pprint
 
 parser = argparse.ArgumentParser()
@@ -12,6 +12,7 @@ parser.add_argument("--batch", action="store_true", help="Batch scan")
 parser.add_argument("--debug", action="store_true", help="Debug mode")
 args = parser.parse_args()
 
+dkbc = DKBC()
 
 scanning = True
 
@@ -23,7 +24,7 @@ while scanning:
 
     part_no = input("Enter Part Number: ")
 
-    data = dk_get_part_details(part_no)
+    data = dkbc.get_part_details(part_no)
 
     if args.debug:
         pprint(data)

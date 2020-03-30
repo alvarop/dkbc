@@ -15,7 +15,6 @@ else:
 redirect_uri = "https://alvarop.com/dkbc/dk_oauth.html"
 API_URL = "https://api.digikey.com"
 
-# https://api-portal.digikey.com/app_overview
 url = (
     API_URL
     + "/v1/oauth2/authorize?response_type=code&client_id={}&redirect_uri={}".format(

@@ -2,7 +2,7 @@ import argparse
 import re
 import time
 import os
-from dkbc.dkbc import dk_process_barcode
+from dkbc.dkbc import DKBC
 
 
 iso_iec_15434_start = re.compile("^>?\[\)>(\{RS\})?[>]?[0-9]{2}{GS}")
@@ -26,6 +26,7 @@ parser.add_argument("--batch", action="store_true", help="Batch scan")
 parser.add_argument("--debug", action="store_true", help="Debug mode")
 args = parser.parse_args()
 
+dkbc = DKBC() 
 
 def decode_barcode(barcode):
     # Check for valid code first
@@ -67,13 +68,11 @@ while scanning:
         barcode = barcode.replace("{RS}", "\u241e")
         barcode = barcode.replace("{GS}", "\u241d")
         barcode = barcode.replace("{EOT}", "\x04")
-        digikey_data = dk_process_barcode(barcode)
+        digikey_data = dkbc.process_barcode(barcode)
     except ValueError:
         fields = None
         simple_code = None
-        digikey_data = dk_process_barcode(barcode)
-
-    reduced_dis = ["P", "1P"]
+        digikey_data = dkbc.process_barcode(barcode)
 
     new_code = [
         "[)>\u001e06",
