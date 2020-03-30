@@ -19,8 +19,6 @@ known_dis = {
     "4L": "Country of Origin",
 }
 
-reduced_dis = ["P", "1P"]
-
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--outfile", help="CSV output file")
@@ -34,7 +32,6 @@ def decode_barcode(barcode):
     if not iso_iec_15434_start.match(barcode):
         raise ValueError("Invalid barcode!")
 
-    new_code = ["[)>\u001e06"]
     fields = {}
     sections = barcode.split("{GS}")
     for section in sections[1:]:
@@ -42,8 +39,6 @@ def decode_barcode(barcode):
         if match:
             di = match.group("DI")
             value = match.group("value")
-            if di in reduced_dis:
-                new_code.append(di + value)
 
             if di in known_dis:
                 fields[known_dis[di]] = value
@@ -52,10 +47,7 @@ def decode_barcode(barcode):
         elif args.debug:
             print("Invalid section", section)
 
-    # Add GS delimiters and EOT at the end
-    reduced_barcode = "\u001d".join(new_code) + "\u0004"
-
-    return fields, reduced_barcode
+    return fields
 
 
 scanning = True
@@ -68,17 +60,34 @@ while scanning:
 
     barcode = input("Scan barcode:")
 
-    fields, simple_code = decode_barcode(barcode)
+    try:
+        fields = decode_barcode(barcode)
 
-    # TODO - use other digikey api when scanning non-dk barcodes
-    barcode = barcode.replace("{RS}", "\u241e")
-    barcode = barcode.replace("{GS}", "\u241d")
-    barcode = barcode.replace("{EOT}", "\x04")
-    digikey_data = dk_process_barcode(barcode)
+        # TODO - use other digikey api when scanning non-dk barcodes
+        barcode = barcode.replace("{RS}", "\u241e")
+        barcode = barcode.replace("{GS}", "\u241d")
+        barcode = barcode.replace("{EOT}", "\x04")
+        digikey_data = dk_process_barcode(barcode)
+    except ValueError:
+        fields = None
+        simple_code = None
+        digikey_data = dk_process_barcode(barcode)
+
+    reduced_dis = ["P", "1P"]
+
+    new_code = [
+        "[)>\u001e06",
+        "1P" + digikey_data["ManufacturerPartNumber"],
+        "P" + digikey_data["DigiKeyPartNumber"],
+    ]
+
+    # Add GS delimiters and EOT at the end
+    reduced_barcode = "\u001d".join(new_code) + "\u0004"
 
     if args.debug:
-        print(fields)
         print(digikey_data)
+        if fields:
+            print(fields)
 
     if args.outfile:
         new_file = True
@@ -92,17 +101,17 @@ while scanning:
             outfile.write(
                 ",".join(
                     [
-                        fields["Supplier Part Number"],
-                        digikey_data["Description"],
-                        simple_code,
+                        digikey_data["ManufacturerPartNumber"],
+                        digikey_data["ProductDescription"],
+                        reduced_barcode,
                     ]
                 )
                 + "\n"
             )
 
-    if "Description" in digikey_data:
-        description = digikey_data["Description"]
+    if "ProductDescription" in digikey_data:
+        description = digikey_data["ProductDescription"]
     else:
         description = ""
 
-    print(fields["Supplier Part Number"] + " " + description)
+    print(digikey_data["ManufacturerPartNumber"] + " " + description)

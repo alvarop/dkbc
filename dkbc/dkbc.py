@@ -2,7 +2,25 @@ import http.client
 import yaml
 import json
 import requests
+import re
 import time
+import urllib
+from pprint import pprint
+
+API_URL = "api.digikey.com"
+DEBUG = False
+
+
+def __get_cfg():
+    cfg = None
+    with open("config.yml", "r") as ymlfile:
+        cfg = yaml.safe_load(ymlfile)
+
+    if int(cfg["token-expiration"]) < time.time():
+        print("Token has expired, refreshing")
+        cfg = refresh_token(cfg)
+
+    return cfg
 
 
 def refresh_token(cfg):
@@ -21,13 +39,15 @@ def refresh_token(cfg):
     # redirect_uri  This URI must match the redirect URI that you defined while creating your application within the API Portal.
     # grant_type    As defined in the OAuth 2.0 specification, this field must contain a value of authorization_code.
 
-    request_url = "https://sso.digikey.com/as/token.oauth2"
+    request_url = "https://" + API_URL + "/v1/oauth2/token"
 
-    print("Making request to")
     r = requests.post(request_url, data=post_request)
-    print(r.status_code)
     response = r.json()
-    print(response)
+
+    if DEBUG:
+        print("Making request to")
+        print(r.status_code)
+        print(response)
 
     if r.status_code == 200:
         with open("old_config.yml", "w") as outfile:
@@ -45,27 +65,61 @@ def refresh_token(cfg):
 
 
 def dk_process_barcode(barcode):
+    barcode_1d_re = re.compile("^[0-9]+$")
 
-    with open("config.yml", "r") as ymlfile:
-        cfg = yaml.safe_load(ymlfile)
+    if barcode_1d_re.match(barcode):
+        return dk_process_1d_barcode(barcode)
+    else:
+        return dk_process_2d_barcode(barcode)
 
-    if int(cfg["token-expiration"]) < time.time():
-        print("Token has expired, refreshing")
-        cfg = refresh_token(cfg)
 
-    conn = http.client.HTTPSConnection("api.digikey.com")
+def dk_process_1d_barcode(barcode):
 
-    payload = '{"QRCODE":"' + barcode + '"}'
+    cfg = __get_cfg()
+
+    conn = http.client.HTTPSConnection(API_URL)
 
     headers = {
-        "x-ibm-client-id": cfg["client-id"],
-        "authorization": cfg["access-token"],
+        "x-DIGIKEY-client-id": cfg["client-id"],
+        "authorization": "Bearer " + cfg["access-token"],
         "content-type": "application/json",
         "accept": "application/json",
     }
 
     conn.request(
-        "POST", "/services/barcode/v1/productqrcode", payload.encode("utf-8"), headers
+        "GET",
+        "/Barcoding/v3/ProductBarcodes/" + urllib.parse.quote(barcode),
+        None,
+        headers,
+    )
+
+    res = conn.getresponse()
+    data = json.loads(res.read())
+
+    if "httpMessage" in data and data["httpMessage"] == "Unauthorized":
+        print("Unauthorized! Need to refresh token.")
+
+    return data
+
+
+def dk_process_2d_barcode(barcode):
+
+    cfg = __get_cfg()
+
+    conn = http.client.HTTPSConnection(API_URL)
+
+    headers = {
+        "x-DIGIKEY-client-id": cfg["client-id"],
+        "authorization": "Bearer " + cfg["access-token"],
+        "content-type": "application/json",
+        "accept": "application/json",
+    }
+
+    conn.request(
+        "GET",
+        "/Barcoding/v3/Product2DBarcodes/" + urllib.parse.quote(barcode),
+        None,
+        headers,
     )
 
     res = conn.getresponse()
@@ -79,35 +133,27 @@ def dk_process_barcode(barcode):
 
 def dk_get_part_details(part_no):
 
-    with open("config.yml", "r") as ymlfile:
-        cfg = yaml.safe_load(ymlfile)
+    cfg = __get_cfg()
 
-    if int(cfg["token-expiration"]) < time.time():
-        print("Token has expired, refreshing")
-        cfg = refresh_token(cfg)
-
-    conn = http.client.HTTPSConnection("api.digikey.com")
+    conn = http.client.HTTPSConnection(API_URL)
 
     # TODO - escape part_no quotes
-    payload = (
-        '{"Part": "'
-        + part_no
-        + '","IncludeAllAssociatedProducts": "false","IncludeAllForUseWithProducts": "false"}'
-    )
+    payload = '{"Keywords": "' + part_no + '","RecordCount": "10"}'
 
     headers = {
-        "x-ibm-client-id": cfg["client-id"],
-        "authorization": cfg["access-token"],
+        "x-DIGIKEY-client-id": cfg["client-id"],
+        "authorization": "Bearer " + cfg["access-token"],
         "content-type": "application/json",
         "accept": "application/json",
     }
 
     conn.request(
-        "POST", "/services/partsearch/v2/partdetails", payload.encode("utf-8"), headers
+        "POST", "/Search/v3/Products/Keyword", payload.encode("utf-8"), headers
     )
 
     res = conn.getresponse()
-    data = json.loads(res.read())
+
+    data = json.loads(res.read().decode("utf-8"))
 
     if "httpMessage" in data and data["httpMessage"] == "Unauthorized":
         print("Unauthorized! Need to refresh token.")

@@ -6,7 +6,9 @@ These are just a few scripts I wrote to look up part information from Digi-key b
 * Go to https://developer.digikey.com
 * Register/login
 * Register application
-* Get client id and client secret
+  * You'll need to register an organization first
+  * You can use https://alvarop.com/dkbc/dk_oauth.html as an OAuth Callback URL
+* Get client id and client secret from newly created production app
 * Setup python environment (using virtualenv in this case) for examples
 ```
 virtualenv venv

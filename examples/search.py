@@ -2,6 +2,7 @@ import argparse
 import re
 import time
 import os
+import sys
 from dkbc.dkbc import dk_get_part_details
 from pprint import pprint
 
@@ -32,7 +33,11 @@ while scanning:
         print(data["Details"])
         continue
 
-    details = data["PartDetails"]
+    if len(data["Products"]) == 0:
+        print("Part not found...")
+        sys.exit(-1)
+
+    details = data["Products"][0]
 
     print(details["ManufacturerPartNumber"] + " " + details["ProductDescription"])
 

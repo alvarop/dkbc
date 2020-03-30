@@ -13,11 +13,14 @@ else:
     cfg["client-secret"] = input("Enter client secret: ")
 
 redirect_uri = "https://alvarop.com/dkbc/dk_oauth.html"
-
+API_URL = "https://api.digikey.com"
 
 # https://api-portal.digikey.com/app_overview
-url = "https://sso.digikey.com/as/authorization.oauth2?response_type=code&client_id={}&redirect_uri={}".format(
-    cfg["client-id"], redirect_uri
+url = (
+    API_URL
+    + "/v1/oauth2/authorize?response_type=code&client_id={}&redirect_uri={}".format(
+        cfg["client-id"], redirect_uri
+    )
 )
 
 print("Go to {} and get code from URL after logging in".format(url))
@@ -38,7 +41,7 @@ post_request = {
 # redirect_uri  This URI must match the redirect URI that you defined while creating your application within the API Portal.
 # grant_type    As defined in the OAuth 2.0 specification, this field must contain a value of authorization_code.
 
-request_url = "https://sso.digikey.com/as/token.oauth2"
+request_url = API_URL + "/v1/oauth2/token"
 
 print("Making request to")
 r = requests.post(request_url, data=post_request)
@@ -48,7 +51,7 @@ print(response)
 if r.status_code == 200:
     with open("old_config.yml", "w") as outfile:
         yaml.dump(cfg, outfile, default_flow_style=False)
-
+    print(response)
     cfg["refresh-token"] = response["refresh_token"]
     cfg["access-token"] = response["access_token"]
     cfg["token-expiration"] = int(time.time()) + int(response["expires_in"])
