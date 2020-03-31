@@ -4,11 +4,6 @@ import time
 import os
 from dkbc.dkbc import DKBC
 
-
-iso_iec_15434_start = re.compile("^>?\[\)>(\{RS\})?[>]?[0-9]{2}{GS}")
-# https://www.eurodatacouncil.org/images/documents/ANS_MH10.8.2%20_CM_20140512.pdf
-ansi_mh10_8_2_item = re.compile("(?P<DI>[0-9]*[A-Z])(?P<value>[A-Za-z0-9\-\.\ ]*)")
-
 known_dis = {
     "K": "Customer PO Number",
     "1K": "Supplier Order Number",
@@ -24,17 +19,32 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--outfile", help="CSV output file")
 parser.add_argument("--batch", action="store_true", help="Batch scan")
 parser.add_argument("--debug", action="store_true", help="Debug mode")
+
+parser.add_argument("--rs", help='Record separator. Default "{RS}"', default="{RS}")
+parser.add_argument("--gs", help='Group separator. Default "{GS}"', default="{GS}")
+parser.add_argument(
+    "--eot", help='End of transmission. Default "{EOT}"', default="{EOT}"
+)
+
 args = parser.parse_args()
 
-dkbc = DKBC() 
+dkbc = DKBC()
 
-def decode_barcode(barcode):
+
+def decode_2d_barcode(barcode, rs_str, gs_str, eot_str):
+    iso_iec_15434_start = re.compile(
+        "^>?\[\)>({})?[>]?[0-9]{{2}}{}".format(rs_str, gs_str)
+    )
+
+    # https://www.eurodatacouncil.org/images/documents/ANS_MH10.8.2%20_CM_20140512.pdf
+    ansi_mh10_8_2_item = re.compile("(?P<DI>[0-9]*[A-Z])(?P<value>[A-Za-z0-9\-\.\ ]*)")
+
     # Check for valid code first
     if not iso_iec_15434_start.match(barcode):
         raise ValueError("Invalid barcode!")
 
     fields = {}
-    sections = barcode.split("{GS}")
+    sections = barcode.split(gs_str)
     for section in sections[1:]:
         match = ansi_mh10_8_2_item.match(section)
         if match:
@@ -62,31 +72,29 @@ while scanning:
     barcode = input("Scan barcode:")
 
     try:
-        fields = decode_barcode(barcode)
+        # Try to decode barcode to see if it's a valid 2d barcode
+        decode_2d_barcode(barcode, gs_str=args.gs, rs_str=args.rs, eot_str=args.eot)
 
-        # TODO - use other digikey api when scanning non-dk barcodes
-        barcode = barcode.replace("{RS}", "\u241e")
-        barcode = barcode.replace("{GS}", "\u241d")
-        barcode = barcode.replace("{EOT}", "\x04")
+        # Convert escape character strings back into raw format for digikey
+        barcode = barcode.replace(args.rs, "\x1e")
+        barcode = barcode.replace(args.gs, "\x1d")
+        barcode = barcode.replace(args.eot, "\x04")
+
         digikey_data = dkbc.process_barcode(barcode)
     except ValueError:
-        fields = None
-        simple_code = None
         digikey_data = dkbc.process_barcode(barcode)
 
+    if args.debug:
+        print(digikey_data)
+
     new_code = [
-        "[)>\u001e06",
+        "[)>\x1e06",
         "1P" + digikey_data["ManufacturerPartNumber"],
         "P" + digikey_data["DigiKeyPartNumber"],
     ]
 
     # Add GS delimiters and EOT at the end
-    reduced_barcode = "\u001d".join(new_code) + "\u0004"
-
-    if args.debug:
-        print(digikey_data)
-        if fields:
-            print(fields)
+    reduced_barcode = "\x1d".join(new_code) + "\x04"
 
     if args.outfile:
         new_file = True
