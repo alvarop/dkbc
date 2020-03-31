@@ -1,4 +1,5 @@
 *config.yml
+*config.yml.old
 *.lock
 venv/
 *.egg-info
