@@ -49,7 +49,7 @@ After entering the client id and secret, your web browser should automatically o
 
 You will now be redirected to the OAuth callback URL, which will show the authorization code.
 
-![OAuth Callback with Authorization Code](screenshots/activate_term.png)
+![OAuth Callback with Authorization Code](screenshots/oauth_callback.png)
 
 That's it! You should be ready to run the examples (or write your own scripts!)
 
