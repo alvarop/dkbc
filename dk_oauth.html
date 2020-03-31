@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="utf-8">
-  <title></title>
+  <title>DKBC OAuth Callback</title>
 
   <meta name="theme-color" content="#fafafa">
   <script type="text/javascript">
@@ -33,11 +33,11 @@
   document.addEventListener('DOMContentLoaded', function () {
       params = getParams(window.location.href);
       if(params["error"]) {
-        document.getElementById("message").innerHTML = "Error: " + params["error"];  
+        document.getElementById("message").innerHTML = "Error: " + params["error"];
       } else if(params["code"]) {
         document.getElementById("message").innerHTML = "Code is: " + params["code"];
       }
-      
+
       if(localStorage.client_id != null) {
         document.getElementById("client_id").value = localStorage.client_id;
       }
@@ -47,18 +47,8 @@
 </head>
 
 <body>
-  <p>DKBC Test</p>
-  <h2 id="message"></h2>
-  <form action="https://sso.digikey.com/as/authorization.oauth2" method="get" onsubmit="return save_client_id()">
-    <fieldset>
-      <legend>client_id</legend>
-      <input type="text" id="client_id" name="client_id">
-      <input type="hidden" name="response_type" value="code">
-      <input type="hidden" name="redirect_uri" value="https://alvarop.com/dkbc/dk_oauth.html">
-      <button>Ok</button>
-    </fieldset>
-  </form>
-
+  <p>DKBC OAuth Callback</p>
+  <h2 id="message">Something went wrong...</h2>
 </body>
 
 </html>

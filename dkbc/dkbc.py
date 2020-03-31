@@ -3,6 +3,7 @@ import yaml
 import json
 import requests
 import re
+import os
 import time
 import urllib
 from pprint import pprint
@@ -20,8 +21,11 @@ class DKBC:
 
     def __update_config(self):
         if self.cfg is None:
-            with open(self.cfg_path, "r") as ymlfile:
-                self.cfg = yaml.safe_load(ymlfile)
+            if os.path.isfile(self.cfg_path):
+                with open(self.cfg_path, "r") as ymlfile:
+                    self.cfg = yaml.safe_load(ymlfile)
+            else:
+                raise FileNotFoundError('Uh oh!! "{}" not found'.format(self.cfg_path))
 
         if int(self.cfg["token-expiration"]) < time.time():
             print("Token has expired, refreshing")
