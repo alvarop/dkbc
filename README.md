@@ -2,6 +2,8 @@
 
 These are just a few scripts I wrote to look up part information from Digi-key barcodes as well as look up parts by number. I then use this information to create new, simplified, barcodes for my inventory system.
 
+Currently, it supports the barcode search API (1D and 2D barcodes) as well as the part search API. I need to document it all, but it should help get you started if you want to play with the Digi-Key API in python.
+
 ## Getting Started
 dkbc uses the official Digi-Key API. In order to use it, you'll need to register on https://developer.digikey.com. You can use your existing Digi-Key account as well.
 
