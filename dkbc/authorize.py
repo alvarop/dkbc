@@ -5,7 +5,9 @@
 #
 import argparse
 import os
+from pprint import pprint
 import requests
+import sys
 import time
 import webbrowser
 import yaml
@@ -15,7 +17,7 @@ DEFAULT_REDIRECT_URI = "https://alvarop.com/dkbc/dk_oauth.html"
 DEFAULT_API_URL = "https://api.digikey.com"
 
 
-def authorize(config_path, api_url, redirect_uri):
+def authorize(config_path, api_url, redirect_uri, no_browser=False, debug=False):
     cfg = {}
     if os.path.isfile(config_path):
         with open(config_path, "r") as ymlfile:
@@ -33,7 +35,8 @@ def authorize(config_path, api_url, redirect_uri):
     )
 
     print("Go to {} and get code from URL after logging in".format(url))
-    webbrowser.open(url)
+    if no_browser is False:
+        webbrowser.open(url)
 
     code = input("Enter code here:")
 
@@ -53,22 +56,29 @@ def authorize(config_path, api_url, redirect_uri):
 
     request_url = api_url + "/v1/oauth2/token"
 
-    print("Making request to")
-    r = requests.post(request_url, data=post_request)
-    response = r.json()
-    print(response)
+    response = requests.post(request_url, data=post_request)
+    response_json = response.json()
+    if debug:
+        pprint(response_json)
 
-    if r.status_code == 200:
-        with open("old_config.yml", "w") as outfile:
+    if response.status_code == 200:
+        # Save backup copy of config file
+        with open(config_path + ".old", "w") as outfile:
             yaml.dump(cfg, outfile, default_flow_style=False)
-        print(response)
-        cfg["refresh-token"] = response["refresh_token"]
-        cfg["access-token"] = response["access_token"]
-        cfg["token-expiration"] = int(time.time()) + int(response["expires_in"])
+
+        cfg["refresh-token"] = response_json["refresh_token"]
+        cfg["access-token"] = response_json["access_token"]
+        cfg["token-expiration"] = int(time.time()) + int(response_json["expires_in"])
+
         with open(config_path, "w") as outfile:
             yaml.dump(cfg, outfile, default_flow_style=False)
+
+        print("Autorized successfully")
     else:
-        print("ERROR")
+        if "ErrorMessage" in response_json:
+            print("ERROR:", response_json["ErrorMessage"])
+        print("Error authorizing ({})".format(response.status_code))
+        sys.exit(-1)
 
 
 if __name__ == "__main__":
@@ -84,10 +94,17 @@ if __name__ == "__main__":
     parser.add_argument(
         "--redirect_uri", help="OAuth Redirect URI", default=DEFAULT_REDIRECT_URI
     )
+
+    parser.add_argument(
+        "--no_browser", help="Don't open web browser automatically", action="store_true"
+    )
+    parser.add_argument("--debug", action="store_true")
     args = parser.parse_args()
 
     authorize(
         config_path=args.config_path,
         api_url=args.api_url,
         redirect_uri=args.redirect_uri,
+        no_browser=args.no_browser,
+        debug=args.debug,
     )
