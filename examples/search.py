@@ -38,6 +38,21 @@ while scanning:
         print("Part not found...")
         sys.exit(-1)
 
+    print(len(data["Products"]), "products found")
+    
+    products = []
+    for product in data["Products"]:
+        if product["MinimumOrderQuantity"] > 1:
+            continue
+
+        if "Digi-Reel" in product["Packaging"]["Value"]:
+            continue
+
+        products.append(product)
+    
+    for product in products:
+        print("\t".join([product["ManufacturerPartNumber"], product["DigiKeyPartNumber"], product["ProductDescription"]]))
+
     details = data["Products"][0]
 
     print(details["ManufacturerPartNumber"] + " " + details["ProductDescription"])

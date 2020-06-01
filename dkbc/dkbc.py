@@ -144,7 +144,7 @@ class DKBC:
         conn = http.client.HTTPSConnection(self.api_url)
 
         # TODO - escape part_no quotes
-        payload = '{"Keywords": "' + part_no + '","RecordCount": "10"}'
+        payload = '{"Keywords": "' + part_no + '","RecordCount": "50"}'
 
         headers = {
             "x-DIGIKEY-client-id": self.cfg["client-id"],
