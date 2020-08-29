@@ -124,7 +124,7 @@ class DKBC:
 
         conn.request(
             "GET",
-            "/Barcoding/v3/Product2DBarcodes/" + urllib.parse.quote(barcode),
+            "/Barcoding/v3/Product2DBarcodes/" + urllib.parse.quote(barcode, safe=''),
             None,
             headers,
         )
