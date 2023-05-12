@@ -31,10 +31,10 @@ Click on the new application to get client id and client secret (which will be u
 
 ![App Details](screenshots/app.png)
 
-Before continuing, you need to setup your python environment (using [virtualenv](https://virtualenv.pypa.io) in this case)
+Before continuing, you need to setup your python environment (using a virtualenv to sandbox this project and its dependencies)
 
 ```
-virtualenv venv
+python3 -m venv venv
 source venv/bin/activate
 pip install -e .
 ```
